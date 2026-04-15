@@ -27,41 +27,26 @@ Use one of these values: `Not started`, `In progress`, `Done`
 
 Write 3 to 5 short lines about what you have already done.
 
-- Accepted the GitHub Classroom repository and reviewed the project structure.
-- Read the project requirements and identified the four required modules.
-- Started updating the README with the project plan and module status.
-- Preparing the first API connection to retrieve live Bitcoin block data.
+- Accepted the GitHub Classroom repository and updated the README.
+- Connected the project to a public blockchain API and fetched real Bitcoin block data.
+- Retrieved and displayed the latest block height, hash, bits, nonce, and transaction count.
+- Ran the Streamlit app and tested the M1 module interface.
 
 ## Next Step
 
 Write the next small step you will do before the next class.
 
-- Create the first Python script in `api/blockchain_client.py` to fetch the latest Bitcoin block data.
+- Improve M1 to show the latest block data more clearly and start the Block Header Analyzer module.
 
 ## Main Problem or Blocker
 
 Write here if you are stuck with something.
 
-- Need to understand the API endpoints and how to parse the block fields correctly.
+- Need to calculate difficulty correctly from the available API fields and understand the block header structure.
 
-```md
 ## How to Run
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
-## Project Structure 
-
-template-blockchain-dashboard/
-|-- README.md
-|-- requirements.txt
-|-- .gitignore
-|-- app.py
-|-- api/
-|   `-- blockchain_client.py
-`-- modules/
-    |-- m1_pow_monitor.py
-    |-- m2_block_header.py
-    |-- m3_difficulty_history.py
-    `-- m4_ai_component.py
