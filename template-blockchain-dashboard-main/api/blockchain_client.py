@@ -35,3 +35,16 @@ def get_difficulty_history(n_points: int = 100) -> list[dict]:
     response.raise_for_status()
     data = response.json()
     return data.get("values", [])[-n_points:]
+
+
+if __name__ == "__main__":
+    latest = get_latest_block()
+    print("Latest block:")
+    print("Height:", latest.get("height"))
+    print("Hash:", latest.get("hash"))
+
+    full_block = get_block(latest["hash"])
+    print("Difficulty:", full_block.get("difficulty", "Not available in this endpoint"))
+    print("Bits:", full_block.get("bits"))
+    print("Nonce:", full_block.get("nonce"))
+    print("Tx count:", full_block.get("n_tx"))
