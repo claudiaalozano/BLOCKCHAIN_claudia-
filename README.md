@@ -30,6 +30,13 @@ Update this README every week.
 | Project Title | CryptoChain Analyzer Dashboard |
 | Chosen AI Approach | Anomaly detector for abnormal inter-block times |
 
+## Repository Structure
+
+- `app.py` — dashboard entry point
+- `api/` — blockchain API connection code
+- `modules/` — project modules
+- `requirements.txt` — Python dependencies
+
 ## Module Tracking
 
 Use one of these values: `Not started`, `In progress`, `Done`
