@@ -7,17 +7,41 @@ import streamlit as st
 
 from api.blockchain_client import get_block_by_height, get_latest_height
 
-
 BLOCKS_PER_PERIOD = 2016
 TARGET_BLOCK_TIME = 600
 TARGET_PERIOD_TIME = BLOCKS_PER_PERIOD * TARGET_BLOCK_TIME
+GENESIS_BITS = 0x1D00FFFF
+
+
+def bits_to_target(bits: int) -> int:
+    """Convert compact bits representation to full target integer."""
+    exponent = bits >> 24
+    coefficient = bits & 0xFFFFFF
+    return coefficient * (1 << (8 * (exponent - 3)))
+
+
+def difficulty_from_bits(bits: int) -> float:
+    """Compute Bitcoin difficulty from bits."""
+    return bits_to_target(GENESIS_BITS) / bits_to_target(bits)
+
+
+def safe_difficulty(block: dict) -> float:
+    """Return a numeric difficulty value."""
+    api_difficulty = block.get("difficulty")
+
+    if api_difficulty is not None:
+        try:
+            return float(api_difficulty)
+        except (TypeError, ValueError):
+            pass
+
+    return difficulty_from_bits(int(block["bits"]))
 
 
 def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
     """Build a dataframe with real Bitcoin difficulty-adjustment periods."""
     latest_height = get_latest_height()
 
-    # Last completed adjustment boundary
     last_completed_boundary = latest_height - (latest_height % BLOCKS_PER_PERIOD)
 
     rows = []
@@ -34,6 +58,8 @@ def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
 
         actual_period_time = end_block["time"] - start_block["time"]
         ratio = actual_period_time / TARGET_PERIOD_TIME
+        bits = int(end_block["bits"])
+        difficulty = safe_difficulty(end_block)
 
         rows.append(
             {
@@ -41,19 +67,37 @@ def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
                 "End Height": end_height,
                 "Start Time": pd.to_datetime(start_block["time"], unit="s"),
                 "End Time": pd.to_datetime(end_block["time"], unit="s"),
-                "Difficulty": end_block.get("difficulty"),
+                "Difficulty": difficulty,
                 "Actual Period Time (s)": actual_period_time,
                 "Target Period Time (s)": TARGET_PERIOD_TIME,
                 "Actual/Target Ratio": ratio,
                 "Avg Block Time (s)": actual_period_time / BLOCKS_PER_PERIOD,
-                "Bits": end_block.get("bits"),
+                "Bits": bits,
                 "Hash": end_block.get("hash"),
             }
         )
 
     df = pd.DataFrame(rows)
-    if not df.empty:
-        df = df.sort_values("End Height").reset_index(drop=True)
+
+    if df.empty:
+        return df
+
+    numeric_cols = [
+        "Start Height",
+        "End Height",
+        "Difficulty",
+        "Actual Period Time (s)",
+        "Target Period Time (s)",
+        "Actual/Target Ratio",
+        "Avg Block Time (s)",
+        "Bits",
+    ]
+
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df = df.dropna(subset=["Difficulty", "Actual/Target Ratio"])
+    df = df.sort_values("End Height").reset_index(drop=True)
 
     return df
 
@@ -90,6 +134,7 @@ def render() -> None:
                     y="Difficulty",
                     markers=True,
                     title="Bitcoin Difficulty at Each Adjustment Boundary",
+                    hover_data=["End Height", "Bits"],
                 )
                 fig1.update_layout(
                     xaxis_title="Adjustment Date",
@@ -105,7 +150,7 @@ def render() -> None:
                         y=df["Difficulty"],
                         mode="lines+markers",
                         name="Difficulty",
-                        text=df["End Height"].apply(lambda x: f"Height {x}"),
+                        text=df["End Height"].apply(lambda x: f"Height {int(x)}"),
                     )
                 )
                 fig2.update_layout(
