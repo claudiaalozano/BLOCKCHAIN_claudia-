@@ -1,5 +1,6 @@
 """Module M2: Block Header Analyzer."""
 
+from datetime import datetime
 import hashlib
 import struct
 
@@ -38,6 +39,11 @@ def build_block_header(block: dict) -> bytes:
     return version + prev_hash + merkle_root + timestamp + bits + nonce
 
 
+def format_timestamp(timestamp: int) -> str:
+    """Format Unix timestamp as UTC datetime."""
+    return datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
 def render() -> None:
     """Render the M2 panel."""
     st.header("M2 - Block Header Analyzer")
@@ -70,7 +76,8 @@ def render() -> None:
                 st.write(f"**Version:** {block.get('ver')}")
                 st.write(f"**Previous block hash:** {block.get('prev_block')}")
                 st.write(f"**Merkle root:** {block.get('mrkl_root')}")
-                st.write(f"**Timestamp:** {block.get('time')}")
+                st.write(f"**Timestamp:** {format_timestamp(block['time'])}")
+                st.write(f"**Timestamp (Unix):** {block.get('time')}")
                 st.write(f"**Bits:** {block.get('bits')}")
                 st.write(f"**Nonce:** {block.get('nonce')}")
 
@@ -80,18 +87,23 @@ def render() -> None:
 
                 api_hash = block.get("hash")
                 target = bits_to_target(block["bits"])
+                target_hex = f"{target:064x}"
                 hash_int = int(local_hash, 16)
                 pow_valid = hash_int <= target
                 leading_zero_bits = count_leading_zero_bits(local_hash)
 
                 st.subheader("80-byte Header")
-                st.code(header.hex())
+                st.code(header.hex(), language="text")
+                st.caption(
+                    "The header is reconstructed using Bitcoin's little-endian byte order before applying double SHA-256."
+                )
 
                 st.subheader("Local Proof of Work Verification")
                 st.write(f"**Hash from API:** `{api_hash}`")
                 st.write(f"**Hash computed locally:** `{local_hash}`")
                 st.write(f"**Matches API hash:** {local_hash == api_hash}")
-                st.write(f"**Target (decoded from bits):** `{target}`")
+                st.write(f"**Target (decoded from bits, decimal):** `{target}`")
+                st.write(f"**Target (decoded from bits, hex):** `{target_hex}`")
                 st.write(f"**Hash as integer:** `{hash_int}`")
                 st.write(f"**Hash < Target:** {pow_valid}")
                 st.write(f"**Leading zero bits:** {leading_zero_bits}")
@@ -107,6 +119,9 @@ def render() -> None:
                 )
                 st.write(
                     "Bitcoin miners vary the nonce and other block contents until the double SHA-256 hash is below the target."
+                )
+                st.write(
+                    "When rebuilding the header, the fields must be packed in little-endian format to reproduce the real block hash correctly."
                 )
                 st.write(
                     "A valid block hash therefore contains many leading zero bits."
