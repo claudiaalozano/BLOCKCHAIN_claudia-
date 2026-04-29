@@ -1,76 +1,112 @@
-"""
-Blockchain API client.
-
-Provides helper functions to fetch blockchain data from public APIs.
-"""
+"""Blockchain API client with retries and fallback providers."""
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-BASE_URL = "https://blockchain.info"
+BASE_URLS = [
+    "https://blockstream.info/api",
+    "https://mempool.space/api",
+]
+TIMEOUT = 10
 
 
-def get_latest_block() -> dict:
-    """Return the latest block summary."""
-    response = requests.get(f"{BASE_URL}/latestblock", timeout=10)
-    response.raise_for_status()
-    return response.json()
+def _build_session() -> requests.Session:
+    session = requests.Session()
 
-
-def get_block(block_hash: str) -> dict:
-    """Return full details for a block identified by *block_hash*."""
-    response = requests.get(
-        f"{BASE_URL}/rawblock/{block_hash}", timeout=10
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=3,
+        backoff_factor=0.8,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=frozenset(["GET"]),
+        raise_on_status=False,
     )
-    response.raise_for_status()
-    return response.json()
 
-
-def get_difficulty_history(n_points: int = 100) -> list[dict]:
-    """Return the last *n_points* difficulty values as a list of dicts."""
-    response = requests.get(
-        f"{BASE_URL}/charts/difficulty",
-        params={"timespan": "1year", "format": "json", "sampled": "true"},
-        timeout=10,
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    session.headers.update(
+        {"User-Agent": "CryptoChainAnalyzerDashboard/1.0"}
     )
-    response.raise_for_status()
-    data = response.json()
-    return data.get("values", [])[-n_points:]
+    return session
 
 
-def get_block_by_height(height: int) -> dict:
-    """Return one block found at a given block height."""
-    response = requests.get(
-        f"{BASE_URL}/block-height/{height}",
-        params={"format": "json"},
-        timeout=10,
-    )
-    response.raise_for_status()
-    data = response.json()
-    blocks = data.get("blocks", [])
-    if not blocks:
-        raise ValueError(f"No block found at height {height}")
-    return blocks[0]
+SESSION = _build_session()
 
 
-def get_latest_height() -> int:
-    """Return the latest Bitcoin block height."""
-    latest = get_latest_block()
-    height = latest.get("height")
-    if height is None:
-        raise ValueError("Latest block height not available")
-    return int(height)
+def _get_json(path: str):
+    last_error = None
+
+    for base_url in BASE_URLS:
+        try:
+            response = SESSION.get(f"{base_url}{path}", timeout=TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as exc:
+            last_error = exc
+
+    raise RuntimeError(f"All API providers failed: {last_error}")
 
 
-if __name__ == "__main__":
-    latest = get_latest_block()
-    print("Latest block:")
-    print("Height:", latest.get("height"))
-    print("Hash:", latest.get("hash"))
+def _get_text(path: str) -> str:
+    last_error = None
 
-    full_block = get_block(latest["hash"])
-    print("Difficulty:", full_block.get("difficulty", "Not available in this endpoint"))
-    print("Bits:", full_block.get("bits"))
-    print("Nonce:", full_block.get("nonce"))
-    print("Tx count:", full_block.get("n_tx"))
-    
+    for base_url in BASE_URLS:
+        try:
+            response = SESSION.get(f"{base_url}{path}", timeout=TIMEOUT)
+            response.raise_for_status()
+            return response.text.strip()
+        except requests.RequestException as exc:
+            last_error = exc
 
+    raise RuntimeError(f"All API providers failed: {last_error}")
+
+
+def get_latest_block():
+    """Return latest block hash and height."""
+    return {
+        "hash": _get_text("/blocks/tip/hash"),
+        "height": int(_get_text("/blocks/tip/height")),
+    }
+
+
+def get_block(block_hash: str):
+    """Return a block normalized to the fields used by the dashboard."""
+    data = _get_json(f"/block/{block_hash}")
+
+    previous_hash = data.get("previousblockhash")
+    merkle_root = data["merkle_root"]
+    timestamp = data["timestamp"]
+    tx_count = data["tx_count"]
+
+    return {
+        "hash": data["id"],
+        "id": data["id"],
+        "height": data["height"],
+        "ver": data["version"],
+        "version": data["version"],
+        "prev_block": previous_hash,
+        "previousblockhash": previous_hash,
+        "mrkl_root": merkle_root,
+        "merkle_root": merkle_root,
+        "time": timestamp,
+        "timestamp": timestamp,
+        "bits": data["bits"],
+        "nonce": data["nonce"],
+        "n_tx": tx_count,
+        "tx_count": tx_count,
+        "difficulty": data.get("difficulty"),
+    }
+
+
+def get_latest_height():
+    """Return the current blockchain height."""
+    return int(_get_text("/blocks/tip/height"))
+
+
+def get_block_by_height(height: int):
+    """Return the block at a given height."""
+    block_hash = _get_text(f"/block-height/{height}")
+    return get_block(block_hash)

@@ -66,28 +66,14 @@ def render() -> None:
     """Render the M1 panel."""
     st.header("M1 - Proof of Work Monitor")
     st.write("This module shows live Bitcoin mining data from recent Bitcoin blocks.")
+    sample_size = st.slider("Blocks to analyse", 5, 10, 6, 1)
 
-    if "m1_loaded" not in st.session_state:
-        st.session_state["m1_loaded"] = False
 
-    sample_size = st.slider("Blocks to analyse", 10, 30, 20, 10)
-
-    col1, col2 = st.columns(2)
-
-    if col1.button("Load M1 data", key="m1_load"):
-        st.session_state["m1_loaded"] = True
-
-    if col2.button("Refresh now", key="m1_refresh"):
+    if st.button("Refresh now", key="m1_refresh"):
         load_chain.clear()
-        st.session_state["m1_loaded"] = True
-
-    if not st.session_state["m1_loaded"]:
-        st.info("Choose the number of blocks and click 'Load M1 data'.")
-        return
 
     try:
-        with st.spinner("Fetching blockchain data..."):
-            latest, blocks = load_chain(sample_size)
+        latest, blocks = load_chain(sample_size)
     except Exception as exc:
         st.error(f"Error fetching blockchain data: {exc}")
         return
@@ -122,11 +108,9 @@ def render() -> None:
     st.write(f"**Height:** {latest.get('height')}")
     st.write(f"**Hash:** `{block_hash}`")
     st.write(f"**Bits:** {bits}")
-
-    if timestamp is not None:
-        st.write(
-            f"**Timestamp:** {datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}"
-        )
+    st.write(
+        f"**Timestamp:** {datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+    )
 
     st.subheader("Target threshold encoded by bits")
     st.code(f"{target:064x}", language="text")
@@ -144,3 +128,4 @@ def render() -> None:
     st.caption(
         "Block arrival times should look roughly exponential, with a mean near 10 minutes."
     )
+
