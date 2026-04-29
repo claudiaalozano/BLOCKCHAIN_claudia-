@@ -43,35 +43,29 @@ Use one of these values: `Not started`, `In progress`, `Done`
 
 | Module | What it should include | Status |
 |---|---|---|
-| M1 | Proof of Work Monitor | In progress |
-| M2 | Block Header Analyzer | Not started |
-| M3 | Difficulty History | Not started |
-| M4 | AI Component | Not started |
+| M1 | Proof of Work Monitor | Done |
+| M2 | Block Header Analyzer | Done |
+| M3 | Difficulty History | Done |
+| M4 | AI Component | In progress |
 
 ## Current Progress
 
-Write 3 to 5 short lines about what you have already done.
-
-- Accepted the GitHub Classroom repository and updated the README.
-- Connected the project to a public blockchain API and fetched real Bitcoin block data.
-- Retrieved and displayed the latest block height, hash, bits, nonce, and transaction count.
-- Ran the Streamlit app and tested the M1 module interface.
+- Implemented M1 with live Bitcoin mining metrics, including difficulty, leading zero bits, estimated hash rate, and recent block-time analysis.
+- Implemented M2 to reconstruct the 80-byte block header and verify Proof of Work locally using double SHA-256.
+- Implemented M3 to analyse Bitcoin difficulty adjustment periods and compare actual block times against the 600-second target.
+- Defined the M4 AI approach as an anomaly detector for unusual Bitcoin inter-block times.
+- Tested the Streamlit dashboard and confirmed that M1, M2, M3, and the M4 skeleton are visible in the app.
 
 ## Next Step
 
-Write the next small step you will do before the next class.
-
-- Improve M1 to show the latest block data more clearly and start the Block Header Analyzer module.
+- Implement anomaly scoring in M4 and display flagged unusual block intervals in a chart and table.
 
 ## Main Problem or Blocker
 
-Write here if you are stuck with something.
-
-- Need to calculate difficulty correctly from the available API fields and understand the block header structure.
+- The main remaining task is to turn the M4 anomaly detector from a planned skeleton into a working AI analysis module.
 
 ## How to Run
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
-```
