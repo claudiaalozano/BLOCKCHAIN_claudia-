@@ -7,6 +7,7 @@ import streamlit as st
 
 from api.blockchain_client import get_block_by_height, get_latest_height
 
+
 BLOCKS_PER_PERIOD = 2016
 TARGET_BLOCK_TIME = 600
 TARGET_PERIOD_TIME = BLOCKS_PER_PERIOD * TARGET_BLOCK_TIME
