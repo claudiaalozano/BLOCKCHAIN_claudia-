@@ -10,38 +10,12 @@ from api.blockchain_client import get_block_by_height, get_latest_height
 BLOCKS_PER_PERIOD = 2016
 TARGET_BLOCK_TIME = 600
 TARGET_PERIOD_TIME = BLOCKS_PER_PERIOD * TARGET_BLOCK_TIME
-GENESIS_BITS = 0x1D00FFFF
 
 
-def bits_to_target(bits: int) -> int:
-    """Convert compact bits representation to full target integer."""
-    exponent = bits >> 24
-    coefficient = bits & 0xFFFFFF
-    return coefficient * (1 << (8 * (exponent - 3)))
-
-
-def difficulty_from_bits(bits: int) -> float:
-    """Compute Bitcoin difficulty from bits."""
-    return bits_to_target(GENESIS_BITS) / bits_to_target(bits)
-
-
-def safe_difficulty(block: dict) -> float:
-    """Return a numeric difficulty value."""
-    api_difficulty = block.get("difficulty")
-
-    if api_difficulty is not None:
-        try:
-            return float(api_difficulty)
-        except (TypeError, ValueError):
-            pass
-
-    return difficulty_from_bits(int(block["bits"]))
-
-
+@st.cache_data(ttl=300)
 def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
     """Build a dataframe with real Bitcoin difficulty-adjustment periods."""
     latest_height = get_latest_height()
-
     last_completed_boundary = latest_height - (latest_height % BLOCKS_PER_PERIOD)
 
     rows = []
@@ -58,8 +32,6 @@ def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
 
         actual_period_time = end_block["time"] - start_block["time"]
         ratio = actual_period_time / TARGET_PERIOD_TIME
-        bits = int(end_block["bits"])
-        difficulty = safe_difficulty(end_block)
 
         rows.append(
             {
@@ -67,47 +39,26 @@ def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
                 "End Height": end_height,
                 "Start Time": pd.to_datetime(start_block["time"], unit="s"),
                 "End Time": pd.to_datetime(end_block["time"], unit="s"),
-                "Difficulty": difficulty,
+                "Difficulty": end_block.get("difficulty"),
                 "Actual Period Time (s)": actual_period_time,
                 "Target Period Time (s)": TARGET_PERIOD_TIME,
                 "Actual/Target Ratio": ratio,
                 "Avg Block Time (s)": actual_period_time / BLOCKS_PER_PERIOD,
-                "Bits": bits,
-                "Hash": end_block.get("hash"),
             }
         )
 
     df = pd.DataFrame(rows)
-
-    if df.empty:
-        return df
-
-    numeric_cols = [
-        "Start Height",
-        "End Height",
-        "Difficulty",
-        "Actual Period Time (s)",
-        "Target Period Time (s)",
-        "Actual/Target Ratio",
-        "Avg Block Time (s)",
-        "Bits",
-    ]
-
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    df = df.dropna(subset=["Difficulty", "Actual/Target Ratio"])
-    df = df.sort_values("End Height").reset_index(drop=True)
+    if not df.empty:
+        df = df.sort_values("End Height").reset_index(drop=True)
 
     return df
 
 
 def render() -> None:
     """Render the M3 panel."""
-    st.header("M3 - Difficulty History")
+    st.header("M3 · Difficulty History")
     st.write(
-        "This module shows Bitcoin difficulty over the last completed adjustment periods "
-        "(1 period = 2016 blocks)."
+        "This module shows Bitcoin difficulty over the last completed adjustment periods (1 period = 2016 blocks)."
     )
 
     n_periods = st.slider(
@@ -118,69 +69,54 @@ def render() -> None:
         key="m3_periods",
     )
 
-    if st.button("Load exact adjustment analysis", key="m3_load"):
-        with st.spinner("Fetching adjustment-period data..."):
-            try:
-                df = build_adjustment_periods(n_periods)
+    with st.spinner("Loading adjustment-period analysis..."):
+        try:
+            df = build_adjustment_periods(n_periods)
 
-                if df.empty:
-                    st.warning("No adjustment-period data could be loaded.")
-                    return
+            if df.empty:
+                st.warning("No adjustment-period data could be loaded.")
+                return
 
-                st.subheader("Difficulty Over Completed Adjustment Periods")
-                fig1 = px.line(
-                    df,
-                    x="End Time",
-                    y="Difficulty",
-                    markers=True,
-                    title="Bitcoin Difficulty at Each Adjustment Boundary",
-                    hover_data=["End Height", "Bits"],
-                )
-                fig1.update_layout(
-                    xaxis_title="Adjustment Date",
-                    yaxis_title="Difficulty",
-                )
-                st.plotly_chart(fig1, use_container_width=True)
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Periods analysed", len(df))
+            c2.metric("Latest difficulty", f"{df['Difficulty'].iloc[-1]:,.0f}")
+            c3.metric("Latest avg block time", f"{df['Avg Block Time (s)'].iloc[-1]:.2f} s")
 
-                st.subheader("Difficulty Adjustment Events")
-                fig2 = go.Figure()
-                fig2.add_trace(
-                    go.Scatter(
-                        x=df["End Time"],
-                        y=df["Difficulty"],
-                        mode="lines+markers",
-                        name="Difficulty",
-                        text=df["End Height"].apply(lambda x: f"Height {int(x)}"),
-                    )
-                )
-                fig2.update_layout(
-                    title="Difficulty Adjustment Events (Every 2016 Blocks)",
-                    xaxis_title="Adjustment Date",
-                    yaxis_title="Difficulty",
-                )
-                st.plotly_chart(fig2, use_container_width=True)
+            st.subheader("Difficulty Over Completed Adjustment Periods")
+            fig1 = px.line(
+                df,
+                x="End Time",
+                y="Difficulty",
+                markers=True,
+                title="Bitcoin Difficulty at Each Adjustment Boundary",
+            )
+            fig1.update_layout(
+                xaxis_title="Adjustment date",
+                yaxis_title="Difficulty",
+            )
+            st.plotly_chart(fig1, use_container_width=True)
 
-                st.subheader("Actual Time vs 600-Second Target")
-                fig3 = px.bar(
-                    df,
-                    x="End Time",
-                    y="Actual/Target Ratio",
-                    title="Actual Period Time / Target Period Time",
-                    hover_data=[
-                        "Start Height",
-                        "End Height",
-                        "Actual Period Time (s)",
-                        "Avg Block Time (s)",
-                    ],
-                )
-                fig3.update_layout(
-                    xaxis_title="Adjustment Date",
-                    yaxis_title="Ratio",
-                )
-                fig3.add_hline(y=1.0, line_dash="dash")
-                st.plotly_chart(fig3, use_container_width=True)
+            st.subheader("Adjustment Ratio vs 600-Second Target")
+            fig2 = px.bar(
+                df,
+                x="End Time",
+                y="Actual/Target Ratio",
+                title="Actual Period Time / Target Period Time",
+                hover_data=[
+                    "Start Height",
+                    "End Height",
+                    "Actual Period Time (s)",
+                    "Avg Block Time (s)",
+                ],
+            )
+            fig2.update_layout(
+                xaxis_title="Adjustment date",
+                yaxis_title="Ratio",
+            )
+            fig2.add_hline(y=1.0, line_dash="dash")
+            st.plotly_chart(fig2, use_container_width=True)
 
-                st.subheader("Summary Table")
+            with st.expander("Show summary table"):
                 table_df = df[
                     [
                         "Start Height",
@@ -199,18 +135,10 @@ def render() -> None:
 
                 st.dataframe(table_df, use_container_width=True)
 
-                st.subheader("Interpretation")
-                st.write(
-                    "Bitcoin adjusts difficulty every 2016 blocks to keep the average block time close to 600 seconds."
-                )
-                st.write(
-                    "If the ratio is below 1, blocks were mined faster than the target on average."
-                )
-                st.write(
-                    "If the ratio is above 1, blocks were mined more slowly than expected."
-                )
+            st.subheader("Interpretation")
+            st.write("Bitcoin adjusts difficulty every 2016 blocks to keep the average block time close to 600 seconds.")
+            st.write("If the ratio is below 1, blocks were mined faster than the target on average.")
+            st.write("If the ratio is above 1, blocks were mined more slowly than expected.")
 
-            except Exception as exc:
-                st.error(f"Error loading exact adjustment analysis: {exc}")
-    else:
-        st.info("Click the button to load the exact 2016-block adjustment analysis.")
+        except Exception as exc:
+            st.error(f"Error loading exact adjustment analysis: {exc}")

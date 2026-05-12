@@ -1,6 +1,5 @@
 """Module M2: Block Header Analyzer."""
 
-from datetime import datetime
 import hashlib
 import struct
 
@@ -39,14 +38,9 @@ def build_block_header(block: dict) -> bytes:
     return version + prev_hash + merkle_root + timestamp + bits + nonce
 
 
-def format_timestamp(timestamp: int) -> str:
-    """Format Unix timestamp as UTC datetime."""
-    return datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
 def render() -> None:
     """Render the M2 panel."""
-    st.header("M2 - Block Header Analyzer")
+    st.header("M2 · Block Header Analyzer")
     st.write("Inspect the latest Bitcoin block header and verify its Proof of Work locally.")
 
     use_latest = st.checkbox("Use latest block automatically", value=True)
@@ -67,68 +61,54 @@ def render() -> None:
             key="m2_hash",
         )
 
-    if st.button("Analyze block", key="m2_lookup") and block_hash:
-        with st.spinner("Fetching and analyzing block..."):
-            try:
-                block = get_block(block_hash)
+    if not block_hash:
+        st.info("Enter a block hash to analyse.")
+        return
 
-                st.subheader("Header Fields")
+    with st.spinner("Analysing block header..."):
+        try:
+            block = get_block(block_hash)
+
+            st.subheader("Header Fields")
+            c1, c2 = st.columns(2)
+            with c1:
                 st.write(f"**Version:** {block.get('ver')}")
                 st.write(f"**Previous block hash:** {block.get('prev_block')}")
                 st.write(f"**Merkle root:** {block.get('mrkl_root')}")
-                st.write(f"**Timestamp:** {format_timestamp(block['time'])}")
-                st.write(f"**Timestamp (Unix):** {block.get('time')}")
+            with c2:
+                st.write(f"**Timestamp:** {block.get('time')}")
                 st.write(f"**Bits:** {block.get('bits')}")
                 st.write(f"**Nonce:** {block.get('nonce')}")
 
-                header = build_block_header(block)
-                local_hash_little_endian = double_sha256(header)
-                local_hash = local_hash_little_endian[::-1].hex()
+            header = build_block_header(block)
+            local_hash_little_endian = double_sha256(header)
+            local_hash = local_hash_little_endian[::-1].hex()
 
-                api_hash = block.get("hash")
-                target = bits_to_target(block["bits"])
-                target_hex = f"{target:064x}"
-                hash_int = int(local_hash, 16)
-                pow_valid = hash_int <= target
-                leading_zero_bits = count_leading_zero_bits(local_hash)
+            api_hash = block.get("hash")
+            target = bits_to_target(block["bits"])
+            hash_int = int(local_hash, 16)
+            pow_valid = hash_int <= target
+            leading_zero_bits = count_leading_zero_bits(local_hash)
 
-                st.subheader("80-byte Header")
-                st.code(header.hex(), language="text")
-                st.caption(
-                    "The header is reconstructed using Bitcoin's little-endian byte order before applying double SHA-256."
-                )
+            st.subheader("Verification Results")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Hash matches API", "Yes" if local_hash == api_hash else "No")
+            c2.metric("Hash below target", "Yes" if pow_valid else "No")
+            c3.metric("Leading zero bits", leading_zero_bits)
 
-                st.subheader("Local Proof of Work Verification")
+            st.subheader("80-byte Header")
+            st.code(header.hex())
+
+            with st.expander("See full Proof of Work verification details"):
                 st.write(f"**Hash from API:** `{api_hash}`")
                 st.write(f"**Hash computed locally:** `{local_hash}`")
-                st.write(f"**Matches API hash:** {local_hash == api_hash}")
-                st.write(f"**Target (decoded from bits, decimal):** `{target}`")
-                st.write(f"**Target (decoded from bits, hex):** `{target_hex}`")
+                st.write(f"**Target decoded from bits:** `{target}`")
                 st.write(f"**Hash as integer:** `{hash_int}`")
-                st.write(f"**Hash < Target:** {pow_valid}")
-                st.write(f"**Leading zero bits:** {leading_zero_bits}")
 
-                if pow_valid and local_hash == api_hash:
-                    st.success("Proof of Work verified correctly.")
-                else:
-                    st.error("Proof of Work verification failed.")
+            st.subheader("Interpretation")
+            st.write("The bits field is the compact representation of the mining target.")
+            st.write("Bitcoin miners vary the nonce and other block contents until the double SHA-256 hash is below the target.")
+            st.write("A valid block hash therefore contains many leading zero bits.")
 
-                st.subheader("Interpretation")
-                st.write(
-                    "The bits field is the compact representation of the mining target."
-                )
-                st.write(
-                    "Bitcoin miners vary the nonce and other block contents until the double SHA-256 hash is below the target."
-                )
-                st.write(
-                    "When rebuilding the header, the fields must be packed in little-endian format to reproduce the real block hash correctly."
-                )
-                st.write(
-                    "A valid block hash therefore contains many leading zero bits."
-                )
-
-            except Exception as exc:
-                st.error(f"Error fetching block: {exc}")
-
-    elif not use_latest:
-        st.info("Enter a block hash and click Analyze block.")
+        except Exception as exc:
+            st.error(f"Error fetching block: {exc}")
