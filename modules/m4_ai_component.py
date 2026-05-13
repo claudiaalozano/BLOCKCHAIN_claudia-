@@ -1,3 +1,5 @@
+# --- M4: AI ANOMALY DETECTOR ---
+
 """Module M4: AI anomaly detector for Bitcoin block inter-arrival times."""
 
 from datetime import datetime
@@ -9,6 +11,8 @@ import streamlit as st
 from api.blockchain_client import get_block, get_latest_block
 
 
+# --- UTILIDADES ---
+
 def _v(data, *keys):
     """Return the first non-None value found for the given keys."""
     for key in keys:
@@ -17,6 +21,8 @@ def _v(data, *keys):
             return value
     return None
 
+
+# --- CARGA DE BLOQUES ---
 
 @st.cache_data(ttl=120)
 def load_recent_blocks(sample_size: int):
@@ -79,6 +85,8 @@ def build_intervals_dataframe(blocks):
     return df
 
 
+# --- RENDER ---
+
 def render() -> None:
     """Render the M4 panel."""
     st.header("M4 · AI Anomaly Detector")
@@ -107,11 +115,14 @@ def render() -> None:
             total_intervals = len(df)
             anomaly_count = int(df["Anomaly"].sum())
             mean_interval = df["Inter-arrival Time (s)"].mean()
+            anomaly_rate = anomaly_count / total_intervals if total_intervals else 0
 
             c1, c2, c3 = st.columns(3)
             c1.metric("Intervals analysed", total_intervals)
-            c2.metric("Anomalies detected", anomaly_count)
-            c3.metric("Average block time", f"{mean_interval:.2f} s")
+            c2.metric("Anomalies detected", anomaly_count, delta=f"{anomaly_rate:.1%} anomaly rate")
+            c3.metric("Average block time", f"{mean_interval:.2f} s", delta=f"{mean_interval - 600:+.2f} s vs target")
+
+            st.divider()
 
             st.subheader("Inter-arrival Times Over Time")
             fig = px.scatter(
@@ -120,14 +131,19 @@ def render() -> None:
                 y="Inter-arrival Time (s)",
                 color="Anomaly",
                 hover_data=["Block Height", "Z-Score"],
+                template="plotly_dark",
                 height=500,
+                color_discrete_map={False: "#00BFFF", True: "#00D68F"},
             )
             fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#111827",
                 xaxis_title="Timestamp",
                 yaxis_title="Inter-arrival time (s)",
                 margin=dict(l=20, r=20, t=20, b=20),
+                legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
             )
-            fig.add_hline(y=600, line_dash="dash")
+            fig.add_hline(y=600, line_dash="dash", line_color="#F0F4F8")
             st.plotly_chart(fig, use_container_width=True)
 
             anomalies = df[df["Anomaly"]].copy()

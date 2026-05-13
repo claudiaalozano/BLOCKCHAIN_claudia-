@@ -1,3 +1,5 @@
+# --- M3: DIFFICULTY HISTORY ---
+
 """Module M3: Difficulty History."""
 
 import pandas as pd
@@ -10,6 +12,8 @@ BLOCKS_PER_PERIOD = 2016
 TARGET_BLOCK_TIME = 600
 TARGET_PERIOD_TIME = BLOCKS_PER_PERIOD * TARGET_BLOCK_TIME
 
+
+# --- CÁLCULO DE PERIODOS DE AJUSTE ---
 
 @st.cache_data(ttl=300)
 def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
@@ -53,6 +57,8 @@ def build_adjustment_periods(n_periods: int) -> pd.DataFrame:
     return df
 
 
+# --- RENDER ---
+
 def render() -> None:
     """Render the M3 panel."""
     st.header("M3 · Difficulty History")
@@ -76,10 +82,18 @@ def render() -> None:
                 st.warning("No adjustment-period data could be loaded.")
                 return
 
+            latest_ratio = df["Actual/Target Ratio"].iloc[-1] - 1
+
             c1, c2, c3 = st.columns(3)
             c1.metric("Periods analysed", len(df))
             c2.metric("Latest difficulty", f"{df['Difficulty'].iloc[-1]:,.0f}")
-            c3.metric("Latest avg block time", f"{df['Avg Block Time (s)'].iloc[-1]:.2f} s")
+            c3.metric(
+                "Latest avg block time",
+                f"{df['Avg Block Time (s)'].iloc[-1]:.2f} s",
+                delta=f"{latest_ratio:+.4f} vs target ratio",
+            )
+
+            st.divider()
 
             st.subheader("Difficulty at Adjustment Boundaries")
             fig1 = px.line(
@@ -87,13 +101,17 @@ def render() -> None:
                 x="End Time",
                 y="Difficulty",
                 markers=True,
+                template="plotly_dark",
                 height=420,
             )
             fig1.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#111827",
                 xaxis_title="Adjustment date",
                 yaxis_title="Difficulty",
-                margin=dict(l=20, r=20, t=50, b=20),
+                margin=dict(l=20, r=20, t=20, b=20),
             )
+            fig1.update_traces(line_color="#00BFFF", marker_color="#00D68F")
             st.plotly_chart(fig1, use_container_width=True)
 
             st.subheader("Adjustment Ratio vs Target")
@@ -101,21 +119,24 @@ def render() -> None:
                 df,
                 x="End Time",
                 y="Actual/Target Ratio",
-                title="Actual period time / target period time",
                 hover_data=[
                     "Start Height",
                     "End Height",
                     "Actual Period Time (s)",
                     "Avg Block Time (s)",
                 ],
+                template="plotly_dark",
                 height=420,
             )
             fig2.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#111827",
                 xaxis_title="Adjustment date",
                 yaxis_title="Ratio",
-                margin=dict(l=20, r=20, t=50, b=20),
+                margin=dict(l=20, r=20, t=20, b=20),
             )
-            fig2.add_hline(y=1.0, line_dash="dash")
+            fig2.update_traces(marker_color="#00BFFF")
+            fig2.add_hline(y=1.0, line_dash="dash", line_color="#F0F4F8")
             st.plotly_chart(fig2, use_container_width=True)
 
             with st.expander("Show summary table"):
@@ -136,6 +157,8 @@ def render() -> None:
                 table_df["Actual/Target Ratio"] = table_df["Actual/Target Ratio"].round(4)
 
                 st.dataframe(table_df, use_container_width=True)
+
+            st.divider()
 
             st.subheader("Interpretation")
             st.write(
