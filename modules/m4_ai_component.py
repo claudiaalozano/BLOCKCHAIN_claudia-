@@ -10,6 +10,7 @@ from api.blockchain_client import get_block, get_latest_block
 
 
 def _v(data, *keys):
+    """Return the first non-None value found for the given keys."""
     for key in keys:
         value = data.get(key)
         if value is not None:
@@ -19,6 +20,7 @@ def _v(data, *keys):
 
 @st.cache_data(ttl=120)
 def load_recent_blocks(sample_size: int):
+    """Load recent Bitcoin blocks walking backwards from the latest block."""
     latest = get_latest_block()
     current = get_block(latest["hash"])
     blocks = [current]
@@ -34,6 +36,7 @@ def load_recent_blocks(sample_size: int):
 
 
 def build_intervals_dataframe(blocks):
+    """Build a dataframe of block inter-arrival times and anomaly scores."""
     rows = []
 
     for i in range(len(blocks) - 1):
@@ -77,11 +80,14 @@ def build_intervals_dataframe(blocks):
 
 
 def render() -> None:
+    """Render the M4 panel."""
     st.header("M4 · AI Anomaly Detector")
-    st.write("Detection of unusual Bitcoin block inter-arrival times using a simple statistical model.")
+    st.write(
+        "Detection of unusual Bitcoin block inter-arrival times using a simple statistical model."
+    )
 
     sample_size = st.slider(
-        "Recent blocks to analyse",
+        "Recent blocks analysed",
         min_value=20,
         max_value=100,
         value=40,
@@ -107,21 +113,26 @@ def render() -> None:
             c2.metric("Anomalies detected", anomaly_count)
             c3.metric("Average block time", f"{mean_interval:.2f} s")
 
-            st.markdown("### Inter-arrival Time Distribution")
+            st.subheader("Inter-arrival Times Over Time")
             fig = px.scatter(
                 df,
                 x="Timestamp",
                 y="Inter-arrival Time (s)",
                 color="Anomaly",
                 hover_data=["Block Height", "Z-Score"],
-                title="Bitcoin Block Inter-arrival Times",
+                height=500,
+            )
+            fig.update_layout(
+                xaxis_title="Timestamp",
+                yaxis_title="Inter-arrival time (s)",
+                margin=dict(l=20, r=20, t=20, b=20),
             )
             fig.add_hline(y=600, line_dash="dash")
             st.plotly_chart(fig, use_container_width=True)
 
             anomalies = df[df["Anomaly"]].copy()
 
-            st.markdown("### Anomalous Blocks")
+            st.subheader("Anomalous Blocks")
             if anomalies.empty:
                 st.success("No anomalies detected with the current threshold.")
             else:
