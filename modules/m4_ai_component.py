@@ -133,7 +133,7 @@ def render() -> None:
                 hover_data=["Block Height", "Z-Score"],
                 template="plotly_white",
                 height=500,
-                color_discrete_map={False: "#00BFFF", True: "#00D68F"},
+                color_discrete_map={False: "#00BFFF", True: "#F59E0B"},
             )
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
