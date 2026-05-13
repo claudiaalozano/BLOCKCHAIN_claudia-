@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from api.blockchain_client import get_block, get_latest_block
@@ -45,6 +46,13 @@ def human_hashrate(hps):
     return f"{hps:,.2f} ZH/s"
 
 
+def short_hash(hex_hash: str) -> str:
+    """Return a shortened version of a block hash."""
+    if not hex_hash or len(hex_hash) < 24:
+        return hex_hash
+    return f"{hex_hash[:18]}...{hex_hash[-10:]}"
+
+
 @st.cache_data(ttl=60)
 def load_chain(sample_size):
     """Load the latest block and walk backwards through previous blocks."""
@@ -64,13 +72,12 @@ def load_chain(sample_size):
 
 def render() -> None:
     """Render the M1 panel."""
-    st.header("M1 - Proof of Work Monitor")
-    st.write("This module shows live Bitcoin mining data from recent Bitcoin blocks.")
-    sample_size = st.slider("Blocks to analyse", 5, 10, 6, 1)
+    st.header("M1 · Proof of Work Monitor")
+    st.write(
+        "Live Bitcoin mining metrics from recent blocks, including difficulty, target interpretation, and estimated hash rate."
+    )
 
-
-    if st.button("Refresh now", key="m1_refresh"):
-        load_chain.clear()
+    sample_size = st.slider("Recent blocks analysed", 5, 20, 8, 1)
 
     try:
         latest, blocks = load_chain(sample_size)
@@ -105,12 +112,24 @@ def render() -> None:
     c3.metric("Estimated hash rate", human_hashrate(hashrate))
 
     st.subheader("Latest block")
-    st.write(f"**Height:** {latest.get('height')}")
-    st.write(f"**Hash:** `{block_hash}`")
-    st.write(f"**Bits:** {bits}")
-    st.write(
-        f"**Timestamp:** {datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}"
-    )
+    col1, col2 = st.columns([1.2, 1])
+
+    with col1:
+        st.write(f"**Height:** {latest.get('height')}")
+        st.write(f"**Hash:** `{short_hash(block_hash)}`")
+        st.write(f"**Bits:** {bits}")
+
+    with col2:
+        st.write(
+            f"**Timestamp:** {datetime.utcfromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
+        st.write(f"**Transactions:** {latest_block.get('n_tx')}")
+        st.write(f"**Average recent block time:** {avg_block_time:.2f} s")
+
+    with st.expander("Show full block hash and extra technical details"):
+        st.write(f"**Full block hash:** `{block_hash}`")
+        st.write(f"**Previous block:** `{latest_block.get('prev_block')}`")
+        st.write(f"**Merkle root:** `{latest_block.get('mrkl_root')}`")
 
     st.subheader("Target threshold encoded by bits")
     st.code(f"{target:064x}", language="text")
@@ -118,14 +137,27 @@ def render() -> None:
         "A valid Bitcoin block hash must be numerically lower than this 256-bit target."
     )
 
-    st.subheader("Time between recent blocks")
-    minutes = pd.Series([d / 60 for d in deltas], name="minutes")
-    bins = list(range(0, 62, 2)) + [999]
-    hist = pd.cut(minutes, bins=bins, right=False).value_counts().sort_index()
-    hist.index = hist.index.astype(str)
-    st.bar_chart(hist)
-
-    st.caption(
-        "Block arrival times should look roughly exponential, with a mean near 10 minutes."
+    st.subheader("Distribution of time between recent blocks")
+    df = pd.DataFrame({"Block interval (minutes)": [d / 60 for d in deltas]})
+    fig = px.histogram(
+        df,
+        x="Block interval (minutes)",
+        nbins=min(len(df), 10),
+        title="Recent Bitcoin block intervals",
     )
+    fig.update_layout(
+        xaxis_title="Minutes",
+        yaxis_title="Count",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
+    st.subheader("Interpretation")
+    st.write(
+        "Bitcoin block arrival times are expected to follow an approximately exponential distribution with an average near 10 minutes."
+    )
+    st.write(
+        f"In this recent sample, the average block interval is {avg_block_time:.2f} seconds."
+    )
+    st.write(
+        "The bits field encodes the mining target, and the block hash must be below that threshold to satisfy Proof of Work."
+    )
