@@ -1,3 +1,5 @@
+# --- APP PRINCIPAL ---
+
 """Main Streamlit entry point for the Blockchain Dashboard project."""
 
 import streamlit as st
@@ -7,113 +9,226 @@ from modules.m2_block_header import render as render_m2
 from modules.m3_difficulty_history import render as render_m3
 from modules.m4_ai_component import render as render_m4
 
+# --- CONFIGURACIÓN GENERAL ---
+
 st.set_page_config(
     page_title="CryptoChain Analyzer Dashboard",
-    page_icon="₿",
+    page_icon="⛓️",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
+
+# --- ESTILOS GLOBALES ---
 
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at top left, rgba(0,191,255,0.08), transparent 30%),
+            linear-gradient(180deg, #0D1117 0%, #111827 100%);
+        color: #F0F4F8;
+    }
+
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #111827 0%, #0F172A 100%);
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    section[data-testid="stSidebar"] * {
+        color: #F0F4F8 !important;
+    }
+
     .block-container {
-        padding-top: 1.2rem;
+        max-width: 1380px;
+        padding-top: 1.3rem;
         padding-bottom: 2rem;
-        max-width: 1350px;
     }
 
-    h1 {
-        font-size: 3rem !important;
-        font-weight: 800 !important;
-        margin-bottom: 0.25rem !important;
-        color: #111827 !important;
+    h1, h2, h3 {
+        color: #F0F4F8 !important;
+        letter-spacing: -0.02em;
     }
 
-    h2 {
-        font-size: 2rem !important;
-        font-weight: 700 !important;
-        margin-top: 0.5rem !important;
-        color: #111827 !important;
+    p, label, li, div {
+        color: #C9D1D9;
     }
 
-    h3 {
-        font-size: 1.15rem !important;
-        font-weight: 700 !important;
-        color: #1f2937 !important;
+    .hero-box {
+        background: linear-gradient(135deg, rgba(30,42,56,0.92), rgba(17,24,39,0.96));
+        border: 1px solid rgba(0,191,255,0.22);
+        border-radius: 22px;
+        padding: 1.6rem 1.7rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.28);
     }
 
-    p, li, label, div {
-        color: #374151;
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #F0F4F8;
+        margin: 0;
+    }
+
+    .hero-subtitle {
+        font-size: 1.02rem;
+        color: #A9B4C2;
+        margin-top: 0.45rem;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    .info-card {
+        background: rgba(30,42,56,0.82);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
+        min-height: 170px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+        margin-bottom: 1rem;
+    }
+
+    .info-card h3 {
+        margin-top: 0.1rem;
+        margin-bottom: 0.55rem;
+        color: #F0F4F8 !important;
+        font-size: 1.08rem;
+    }
+
+    .info-card p {
+        margin: 0;
+        color: #B8C4D1;
+        line-height: 1.6;
     }
 
     [data-testid="stMetric"] {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
+        background: rgba(30,42,56,0.9);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
         padding: 16px 18px;
-        border-radius: 16px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.20);
     }
 
     [data-testid="stMetricLabel"] {
-        font-size: 0.95rem;
+        color: #9FB1C1 !important;
+        font-size: 0.92rem;
         font-weight: 600;
     }
 
     [data-testid="stMetricValue"] {
-        font-size: 1.8rem;
-        font-weight: 750;
-        color: #111827;
+        color: #F0F4F8 !important;
+        font-size: 1.9rem;
+        font-weight: 800;
     }
 
-    .hero-box {
-        padding: 1.5rem 1.6rem;
-        border-radius: 20px;
-        background: linear-gradient(135deg, #f8fafc, #eef2ff);
-        border: 1px solid #e5e7eb;
-        margin-bottom: 1.2rem;
+    [data-testid="stMetricDelta"] {
+        color: #00D68F !important;
+        font-weight: 700;
     }
 
-    .hero-subtitle {
-        font-size: 1.05rem;
-        color: #4b5563;
-        margin-top: 0.35rem;
-        margin-bottom: 0;
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.35rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
-    .info-card {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 1rem 1.1rem;
-        height: 100%;
-        margin-bottom: 1rem;
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        color: #AAB7C4;
+        border-radius: 10px 10px 0 0;
+        padding: 0.6rem 0.9rem;
+    }
+
+    .stTabs [aria-selected="true"] {
+        color: #00BFFF !important;
+        border-bottom: 2px solid #00BFFF !important;
     }
 
     .stExpander {
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(30,42,56,0.65);
+    }
+
+    .stCodeBlock, code {
+        border-radius: 14px !important;
+    }
+
+    .stDataFrame {
         border-radius: 14px;
-        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    hr.custom-divider {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,191,255,0.45), transparent);
+        margin: 1.3rem 0 1rem 0;
+    }
+
+    .footer-box {
+        margin-top: 1.4rem;
+        padding: 1rem 1.2rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(17,24,39,0.92);
+        color: #94A3B8;
+        font-size: 0.92rem;
+        text-align: center;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+# --- SIDEBAR ---
+
+with st.sidebar:
+    st.markdown("## ⛓️ Navigation")
+    st.caption("Blockchain analytics dashboard")
+
+    st.markdown("### Sections")
+    st.write("**Overview**")
+    st.write("**M1** · Proof of Work Monitor")
+    st.write("**M2** · Block Header Analyzer")
+    st.write("**M3** · Difficulty History")
+    st.write("**M4** · AI Anomaly Detector")
+
+    st.divider()
+
+    st.markdown("### Context")
+    st.write("**Blockchain:** Bitcoin")
+    st.write("**Theme:** Cryptography + Security")
+    st.write("**AI approach:** Statistical anomaly detection")
+
+    st.divider()
+
+    st.info(
+        "This app combines live Bitcoin blockchain data, cryptographic verification, "
+        "difficulty analysis, and a lightweight AI anomaly detector."
+    )
+
+# --- HERO ---
+
 st.markdown(
     """
     <div class="hero-box">
-        <h1>₿ CryptoChain Analyzer Dashboard</h1>
+        <div class="hero-title">₿ CryptoChain Analyzer Dashboard</div>
         <p class="hero-subtitle">
             Real-time Bitcoin cryptographic metrics, Proof of Work verification,
-            difficulty adjustment analysis, and anomaly detection.
+            difficulty adjustment analysis, and anomaly detection in a professional
+            blockchain analytics interface.
         </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-with st.sidebar:
-    st.header("Navigation")
-    st.write("Use the tabs to explore the project modules.")
 
 tabs = st.tabs(
     [
@@ -125,17 +240,23 @@ tabs = st.tabs(
     ]
 )
 
+# --- OVERVIEW ---
+
 with tabs[0]:
     st.header("Project Overview")
     st.write(
-        "This dashboard analyses live Bitcoin blockchain data and connects the results to core cryptographic concepts studied in class."
+        "This dashboard analyses live Bitcoin blockchain data and connects the results "
+        "to key cryptographic concepts such as Proof of Work, difficulty adjustment, "
+        "block headers, and anomaly detection."
     )
 
-    c1, c2, c3 = st.columns([1, 1, 0.2])
+    c1, c2 = st.columns(2)
     c1.metric("Blockchain", "Bitcoin")
     c2.metric("AI Approach", "Anomaly detection")
 
-    st.markdown("### What this project does")
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+
+    st.subheader("What this project does")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -143,7 +264,7 @@ with tabs[0]:
             """
             <div class="info-card">
                 <h3>M1 · Proof of Work Monitor</h3>
-                <p>Shows live mining-related data such as the latest block information, target representation, and Proof of Work interpretation.</p>
+                <p>Displays live mining metrics such as difficulty, leading zero bits, target interpretation, and estimated network hash rate.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -153,7 +274,7 @@ with tabs[0]:
             """
             <div class="info-card">
                 <h3>M2 · Block Header Analyzer</h3>
-                <p>Displays the Bitcoin block header fields, reconstructs the 80-byte header, and verifies the Proof of Work locally using double SHA-256.</p>
+                <p>Reconstructs the 80-byte Bitcoin block header and verifies the block hash locally using double SHA-256.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -164,7 +285,7 @@ with tabs[0]:
             """
             <div class="info-card">
                 <h3>M3 · Difficulty History</h3>
-                <p>Shows how Bitcoin difficulty evolves over real adjustment periods and compares actual mining time with the 600-second target.</p>
+                <p>Explores real difficulty-adjustment periods and compares actual mining time with the 600-second protocol target.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -174,16 +295,22 @@ with tabs[0]:
             """
             <div class="info-card">
                 <h3>M4 · AI Anomaly Detector</h3>
-                <p>Detects unusual block inter-arrival times using a simple statistical model and highlights potentially abnormal timing behaviour.</p>
+                <p>Flags unusual block inter-arrival times using a statistical anomaly detector based on z-scores.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("### Project focus")
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+
+    st.subheader("Project Focus")
     st.write(
-        "The goal of this project is to combine live blockchain data, cryptographic verification, visual analysis, and an AI-based interpretation layer in a single dashboard."
+        "The objective is to combine live blockchain data, cryptographic validation, "
+        "historical difficulty analysis, and an AI-based interpretation layer into a "
+        "single polished dashboard."
     )
+
+# --- MÓDULOS ---
 
 with tabs[1]:
     render_m1()
@@ -196,3 +323,14 @@ with tabs[3]:
 
 with tabs[4]:
     render_m4()
+
+# --- FOOTER ---
+
+st.markdown(
+    """
+    <div class="footer-box">
+        CryptoChain Analyzer Dashboard · Streamlit + Python · Blockchain / Cryptography Project
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
