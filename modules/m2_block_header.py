@@ -1,5 +1,6 @@
 """Module M2: Block Header Analyzer."""
 
+from datetime import datetime
 import hashlib
 import struct
 
@@ -38,6 +39,13 @@ def build_block_header(block: dict) -> bytes:
     return version + prev_hash + merkle_root + timestamp + bits + nonce
 
 
+def short_hash(hex_hash: str) -> str:
+    """Return a shortened version of a hash for display."""
+    if not hex_hash or len(hex_hash) < 24:
+        return hex_hash
+    return f"{hex_hash[:18]}...{hex_hash[-10:]}"
+
+
 def render() -> None:
     """Render the M2 panel."""
     st.header("M2 · Block Header Analyzer")
@@ -50,7 +58,7 @@ def render() -> None:
         try:
             latest = get_latest_block()
             block_hash = latest["hash"]
-            st.write(f"**Latest block hash:** `{block_hash}`")
+            st.write(f"**Latest block hash:** `{short_hash(block_hash)}`")
         except Exception as exc:
             st.error(f"Error fetching latest block: {exc}")
             return
@@ -69,6 +77,11 @@ def render() -> None:
         try:
             block = get_block(block_hash)
 
+            timestamp_value = block.get("time")
+            readable_time = datetime.utcfromtimestamp(timestamp_value).strftime(
+                "%Y-%m-%d %H:%M:%S UTC"
+            )
+
             st.subheader("Header Fields")
             c1, c2 = st.columns(2)
             with c1:
@@ -76,7 +89,7 @@ def render() -> None:
                 st.write(f"**Previous block hash:** {block.get('prev_block')}")
                 st.write(f"**Merkle root:** {block.get('mrkl_root')}")
             with c2:
-                st.write(f"**Timestamp:** {block.get('time')}")
+                st.write(f"**Timestamp:** {readable_time}")
                 st.write(f"**Bits:** {block.get('bits')}")
                 st.write(f"**Nonce:** {block.get('nonce')}")
 
@@ -96,8 +109,8 @@ def render() -> None:
             c2.metric("Hash below target", "Yes" if pow_valid else "No")
             c3.metric("Leading zero bits", leading_zero_bits)
 
-            st.subheader("80-byte Header")
-            st.code(header.hex())
+            with st.expander("Show reconstructed 80-byte header"):
+                st.code(header.hex(), language="text")
 
             with st.expander("See full Proof of Work verification details"):
                 st.write(f"**Hash from API:** `{api_hash}`")

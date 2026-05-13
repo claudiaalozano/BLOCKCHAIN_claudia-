@@ -2,7 +2,6 @@
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 from api.blockchain_client import get_block_by_height, get_latest_height
@@ -58,11 +57,11 @@ def render() -> None:
     """Render the M3 panel."""
     st.header("M3 · Difficulty History")
     st.write(
-        "This module shows Bitcoin difficulty over the last completed adjustment periods (1 period = 2016 blocks)."
+        "This module shows Bitcoin difficulty over the latest completed adjustment periods (1 period = 2016 blocks)."
     )
 
     n_periods = st.slider(
-        "Number of completed adjustment periods",
+        "Completed adjustment periods",
         min_value=3,
         max_value=12,
         value=6,
@@ -82,36 +81,39 @@ def render() -> None:
             c2.metric("Latest difficulty", f"{df['Difficulty'].iloc[-1]:,.0f}")
             c3.metric("Latest avg block time", f"{df['Avg Block Time (s)'].iloc[-1]:.2f} s")
 
-            st.subheader("Difficulty Over Completed Adjustment Periods")
+            st.subheader("Difficulty at Adjustment Boundaries")
             fig1 = px.line(
                 df,
                 x="End Time",
                 y="Difficulty",
                 markers=True,
-                title="Bitcoin Difficulty at Each Adjustment Boundary",
+                height=420,
             )
             fig1.update_layout(
                 xaxis_title="Adjustment date",
                 yaxis_title="Difficulty",
+                margin=dict(l=20, r=20, t=50, b=20),
             )
             st.plotly_chart(fig1, use_container_width=True)
 
-            st.subheader("Adjustment Ratio vs 600-Second Target")
+            st.subheader("Adjustment Ratio vs Target")
             fig2 = px.bar(
                 df,
                 x="End Time",
                 y="Actual/Target Ratio",
-                title="Actual Period Time / Target Period Time",
+                title="Actual period time / target period time",
                 hover_data=[
                     "Start Height",
                     "End Height",
                     "Actual Period Time (s)",
                     "Avg Block Time (s)",
                 ],
+                height=420,
             )
             fig2.update_layout(
                 xaxis_title="Adjustment date",
                 yaxis_title="Ratio",
+                margin=dict(l=20, r=20, t=50, b=20),
             )
             fig2.add_hline(y=1.0, line_dash="dash")
             st.plotly_chart(fig2, use_container_width=True)
@@ -136,9 +138,15 @@ def render() -> None:
                 st.dataframe(table_df, use_container_width=True)
 
             st.subheader("Interpretation")
-            st.write("Bitcoin adjusts difficulty every 2016 blocks to keep the average block time close to 600 seconds.")
-            st.write("If the ratio is below 1, blocks were mined faster than the target on average.")
-            st.write("If the ratio is above 1, blocks were mined more slowly than expected.")
+            st.write(
+                "Bitcoin adjusts difficulty every 2016 blocks to keep the average block time close to 600 seconds."
+            )
+            st.write(
+                "If the ratio is below 1, blocks were mined faster than the target on average."
+            )
+            st.write(
+                "If the ratio is above 1, blocks were mined more slowly than expected."
+            )
 
         except Exception as exc:
             st.error(f"Error loading exact adjustment analysis: {exc}")
