@@ -1,3 +1,5 @@
+# --- M2: BLOCK HEADER ANALYZER ---
+
 """Module M2: Block Header Analyzer."""
 
 from datetime import datetime
@@ -8,6 +10,8 @@ import streamlit as st
 
 from api.blockchain_client import get_block, get_latest_block
 
+
+# --- UTILIDADES CRIPTOGRÁFICAS ---
 
 def bits_to_target(bits: int) -> int:
     """Convert compact bits representation to full target integer."""
@@ -45,6 +49,8 @@ def short_hash(hex_hash: str) -> str:
         return hex_hash
     return f"{hex_hash[:18]}...{hex_hash[-10:]}"
 
+
+# --- RENDER ---
 
 def render() -> None:
     """Render the M2 panel."""
@@ -103,6 +109,8 @@ def render() -> None:
             pow_valid = hash_int <= target
             leading_zero_bits = count_leading_zero_bits(local_hash)
 
+            st.divider()
+
             st.subheader("Verification Results")
             c1, c2, c3 = st.columns(3)
             c1.metric("Hash matches API", "Yes" if local_hash == api_hash else "No")
@@ -117,6 +125,8 @@ def render() -> None:
                 st.write(f"**Hash computed locally:** `{local_hash}`")
                 st.write(f"**Target decoded from bits:** `{target}`")
                 st.write(f"**Hash as integer:** `{hash_int}`")
+
+            st.divider()
 
             st.subheader("Interpretation")
             st.write("The bits field is the compact representation of the mining target.")

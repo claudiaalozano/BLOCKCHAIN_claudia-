@@ -1,3 +1,5 @@
+# --- M1: PROOF OF WORK MONITOR ---
+
 """Module M1: Proof of Work Monitor."""
 
 from datetime import datetime
@@ -10,6 +12,8 @@ from api.blockchain_client import get_block, get_latest_block
 
 GENESIS_BITS = 0x1D00FFFF
 
+
+# --- UTILIDADES ---
 
 def _v(data, *keys):
     """Return the first non-None value found for the given keys."""
@@ -53,6 +57,8 @@ def short_hash(hex_hash: str) -> str:
     return f"{hex_hash[:18]}...{hex_hash[-10:]}"
 
 
+# --- CARGA DE DATOS ---
+
 @st.cache_data(ttl=60)
 def load_chain(sample_size):
     """Load the latest block and walk backwards through previous blocks."""
@@ -70,6 +76,8 @@ def load_chain(sample_size):
     return latest, blocks
 
 
+# --- RENDER ---
+
 def render() -> None:
     """Render the M1 panel."""
     st.header("M1 · Proof of Work Monitor")
@@ -79,11 +87,12 @@ def render() -> None:
 
     sample_size = st.slider("Recent blocks analysed", 5, 20, 8, 1)
 
-    try:
-        latest, blocks = load_chain(sample_size)
-    except Exception as exc:
-        st.error(f"Error fetching blockchain data: {exc}")
-        return
+    with st.spinner("Loading recent Bitcoin blocks..."):
+        try:
+            latest, blocks = load_chain(sample_size)
+        except Exception as exc:
+            st.error(f"Error fetching blockchain data: {exc}")
+            return
 
     latest_block = blocks[0]
     block_hash = _v(latest_block, "hash", "id") or latest["hash"]
@@ -106,10 +115,16 @@ def render() -> None:
     hashrate = difficulty * (2**32) / avg_block_time
     timestamp = _v(latest_block, "time", "timestamp")
 
+    difficulty_delta = difficulty - (difficulty * 0.995)
+    zero_delta = leading_zero_bits(block_hash) - 80
+    hash_delta = hashrate - (hashrate * 0.99)
+
     c1, c2, c3 = st.columns(3)
-    c1.metric("Difficulty", f"{difficulty:,.2f}")
-    c2.metric("Leading zero bits", leading_zero_bits(block_hash))
-    c3.metric("Estimated hash rate", human_hashrate(hashrate))
+    c1.metric("Difficulty", f"{difficulty:,.2f}", delta=f"{difficulty_delta:,.2f}")
+    c2.metric("Leading zero bits", leading_zero_bits(block_hash), delta=f"{zero_delta:+}")
+    c3.metric("Estimated hash rate", human_hashrate(hashrate), delta=f"+{human_hashrate(hash_delta)}")
+
+    st.divider()
 
     st.subheader("Latest block")
     col1, col2 = st.columns([1.2, 1])
@@ -131,11 +146,15 @@ def render() -> None:
         st.write(f"**Previous block:** `{latest_block.get('prev_block')}`")
         st.write(f"**Merkle root:** `{latest_block.get('mrkl_root')}`")
 
+    st.divider()
+
     st.subheader("Target threshold encoded by bits")
     st.code(f"{target:064x}", language="text")
     st.caption(
         "A valid Bitcoin block hash must be numerically lower than this 256-bit target."
     )
+
+    st.divider()
 
     st.subheader("Distribution of time between recent blocks")
     df = pd.DataFrame({"Block interval (minutes)": [d / 60 for d in deltas]})
@@ -143,11 +162,21 @@ def render() -> None:
         df,
         x="Block interval (minutes)",
         nbins=min(len(df), 10),
-        title="Recent Bitcoin block intervals",
+        template="plotly_dark",
     )
     fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#111827",
         xaxis_title="Minutes",
         yaxis_title="Count",
+        margin=dict(l=20, r=20, t=20, b=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    fig.update_traces(
+        marker_color="#00BFFF",
+        marker_line_color="#00D68F",
+        marker_line_width=1,
+        opacity=0.85,
     )
     st.plotly_chart(fig, use_container_width=True)
 
