@@ -36,6 +36,7 @@ Update this README every week.
 - `api/` — blockchain API connection code
 - `modules/` — project modules
 - `requirements.txt` — Python dependencies
+- `report/` — final PDF report
 
 ## Module Tracking
 
@@ -46,23 +47,20 @@ Use one of these values: `Not started`, `In progress`, `Done`
 | M1 | Proof of Work Monitor | Done |
 | M2 | Block Header Analyzer | Done |
 | M3 | Difficulty History | Done |
-| M4 | AI Component | In progress |
+| M4 | AI Component | Done |
 
 ## Current Progress
 
-- Implemented M1 with live Bitcoin mining metrics, including difficulty, leading zero bits, estimated hash rate, and recent block-time analysis.
-- Implemented M2 to reconstruct the 80-byte block header and verify Proof of Work locally using double SHA-256.
-- Implemented M3 to analyse Bitcoin difficulty adjustment periods and compare actual block times against the 600-second target.
-- Defined the M4 AI approach as an anomaly detector for unusual Bitcoin inter-block times.
-- Tested the Streamlit dashboard and confirmed that M1, M2, M3, and the M4 skeleton are visible in the app.
+- Implemented M1 with live Bitcoin mining metrics, including difficulty, leading zero bits, estimated hash rate, target interpretation, and recent block-time analysis.
+- Implemented M2 to reconstruct the 80-byte Bitcoin block header and verify Proof of Work locally using double SHA-256.
+- Implemented M3 to analyse real Bitcoin difficulty adjustment periods and compare actual block times against the 600-second protocol target.
+- Implemented M4 as an anomaly detector for unusual Bitcoin inter-block times using z-scores and visualised the anomalous intervals in the dashboard.
+- Improved the Streamlit interface with a cleaner layout, overview page, styled metrics, and more polished charts.
 
-## Next Step
-
-- Implement anomaly scoring in M4 and display flagged unusual block intervals in a chart and table.
 
 ## Main Problem or Blocker
 
-- The main remaining task is to turn the M4 anomaly detector from a planned skeleton into a working AI analysis module.
+- The main remaining task is completing the final written report and checking that the whole project is ready for submission.
 
 ## How to Run
 
