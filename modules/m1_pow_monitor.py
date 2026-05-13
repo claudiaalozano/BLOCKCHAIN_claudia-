@@ -158,26 +158,31 @@ def render() -> None:
 
     st.subheader("Distribution of time between recent blocks")
     df = pd.DataFrame({"Block interval (minutes)": [d / 60 for d in deltas]})
+
     fig = px.histogram(
-        df,
-        x="Block interval (minutes)",
-        nbins=min(len(df), 10),
-        template="plotly_dark",
-    )
+    df,
+    x="Block interval (minutes)",
+    nbins=min(len(df), 6),
+    template="plotly_white",
+)
+
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#111827",
+        plot_bgcolor="#FFFFFF",
+        font=dict(color="#0F172A"),
         xaxis_title="Minutes",
         yaxis_title="Count",
         margin=dict(l=20, r=20, t=20, b=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
+
     fig.update_traces(
-        marker_color="#00BFFF",
-        marker_line_color="#00D68F",
-        marker_line_width=1,
-        opacity=0.85,
+        marker_color="#38BDF8",
+        marker_line_color="#2563EB",
+        marker_line_width=2,
+        opacity=0.78,
     )
+
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Interpretation")

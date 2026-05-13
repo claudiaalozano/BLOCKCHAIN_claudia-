@@ -1,5 +1,3 @@
-# --- APP PRINCIPAL ---
-
 """Main Streamlit entry point for the Blockchain Dashboard project."""
 
 import streamlit as st
@@ -13,12 +11,11 @@ from modules.m4_ai_component import render as render_m4
 
 st.set_page_config(
     page_title="CryptoChain Analyzer Dashboard",
-    page_icon="⛓️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- ESTILOS GLOBALES ---
+# --- ESTILOS GLOBALES LIGHT / FINTECH ---
 
 st.markdown(
     """
@@ -31,18 +28,18 @@ st.markdown(
 
     .stApp {
         background:
-            radial-gradient(circle at top left, rgba(0,191,255,0.08), transparent 30%),
-            linear-gradient(180deg, #0D1117 0%, #111827 100%);
-        color: #F0F4F8;
+            radial-gradient(circle at top left, rgba(0,191,255,0.06), transparent 28%),
+            linear-gradient(180deg, #F8FAFC 0%, #EEF3F8 100%);
+        color: #0F172A;
     }
 
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #111827 0%, #0F172A 100%);
-        border-right: 1px solid rgba(255,255,255,0.08);
+        background: linear-gradient(180deg, #EAF4FF 0%, #F5FAFF 100%);
+        border-right: 1px solid rgba(37,99,235,0.10);
     }
 
     section[data-testid="stSidebar"] * {
-        color: #F0F4F8 !important;
+        color: #0F172A !important;
     }
 
     .block-container {
@@ -52,123 +49,119 @@ st.markdown(
     }
 
     h1, h2, h3 {
-        color: #F0F4F8 !important;
+        color: #0F172A !important;
         letter-spacing: -0.02em;
     }
 
     p, label, li, div {
-        color: #C9D1D9;
+        color: #334155;
     }
 
     .hero-box {
-        background: linear-gradient(135deg, rgba(30,42,56,0.92), rgba(17,24,39,0.96));
-        border: 1px solid rgba(0,191,255,0.22);
+        background: linear-gradient(135deg, #FFFFFF, #F4F9FF);
+        border: 1px solid rgba(37,99,235,0.14);
         border-radius: 22px;
         padding: 1.6rem 1.7rem;
         margin-bottom: 1.2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+        box-shadow: 0 10px 30px rgba(15,23,42,0.08);
     }
 
     .hero-title {
         font-size: 3rem;
         font-weight: 800;
-        color: #F0F4F8;
+        color: #0F172A;
         margin: 0;
     }
 
     .hero-subtitle {
         font-size: 1.02rem;
-        color: #A9B4C2;
+        color: #475569;
         margin-top: 0.45rem;
         margin-bottom: 0;
         line-height: 1.6;
     }
 
     .info-card {
-        background: rgba(30,42,56,0.82);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: #FFFFFF;
+        border: 1px solid rgba(37,99,235,0.12);
         border-radius: 18px;
         padding: 1rem 1.1rem;
         min-height: 170px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+        box-shadow: 0 8px 24px rgba(15,23,42,0.06);
         margin-bottom: 1rem;
     }
 
     .info-card h3 {
         margin-top: 0.1rem;
         margin-bottom: 0.55rem;
-        color: #F0F4F8 !important;
+        color: #0F172A !important;
         font-size: 1.08rem;
     }
 
     .info-card p {
         margin: 0;
-        color: #B8C4D1;
+        color: #475569;
         line-height: 1.6;
     }
 
     [data-testid="stMetric"] {
-        background: rgba(30,42,56,0.9);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%);
+        border: 1px solid rgba(37,99,235,0.12);
         border-radius: 18px;
         padding: 16px 18px;
-        box-shadow: 0 8px 22px rgba(0,0,0,0.20);
+        box-shadow: 0 8px 22px rgba(15,23,42,0.06);
     }
 
     [data-testid="stMetricLabel"] {
-        color: #9FB1C1 !important;
+        color: #64748B !important;
         font-size: 0.92rem;
         font-weight: 600;
     }
 
     [data-testid="stMetricValue"] {
-        color: #F0F4F8 !important;
+        color: #0F172A !important;
         font-size: 1.9rem;
         font-weight: 800;
     }
 
     [data-testid="stMetricDelta"] {
-        color: #00D68F !important;
+        color: #00B27A !important;
         font-weight: 700;
     }
 
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.35rem;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 1px solid rgba(37,99,235,0.10);
     }
 
     .stTabs [data-baseweb="tab"] {
         background: transparent;
-        color: #AAB7C4;
+        color: #64748B;
         border-radius: 10px 10px 0 0;
         padding: 0.6rem 0.9rem;
     }
 
     .stTabs [aria-selected="true"] {
-        color: #00BFFF !important;
-        border-bottom: 2px solid #00BFFF !important;
+        color: #2563EB !important;
+        border-bottom: 2px solid #2563EB !important;
     }
 
     .stExpander {
         border-radius: 16px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(30,42,56,0.65);
-    }
-
-    .stCodeBlock, code {
-        border-radius: 14px !important;
+        border: 1px solid rgba(37,99,235,0.10);
+        background: #FFFFFF;
     }
 
     .stDataFrame {
         border-radius: 14px;
         overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid rgba(37,99,235,0.10);
     }
 
     hr.custom-divider {
         border: none;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(0,191,255,0.45), transparent);
+        background: linear-gradient(90deg, transparent, rgba(37,99,235,0.35), transparent);
         margin: 1.3rem 0 1rem 0;
     }
 
@@ -176,11 +169,12 @@ st.markdown(
         margin-top: 1.4rem;
         padding: 1rem 1.2rem;
         border-radius: 16px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(17,24,39,0.92);
-        color: #94A3B8;
+        border: 1px solid rgba(37,99,235,0.10);
+        background: #FFFFFF;
+        color: #64748B;
         font-size: 0.92rem;
         text-align: center;
+        box-shadow: 0 6px 16px rgba(15,23,42,0.05);
     }
     </style>
     """,
@@ -190,7 +184,7 @@ st.markdown(
 # --- SIDEBAR ---
 
 with st.sidebar:
-    st.markdown("## ⛓️ Navigation")
+    st.markdown("## Navigation:")
     st.caption("Blockchain analytics dashboard")
 
     st.markdown("### Sections")
@@ -209,11 +203,6 @@ with st.sidebar:
 
     st.divider()
 
-    st.info(
-        "This app combines live Bitcoin blockchain data, cryptographic verification, "
-        "difficulty analysis, and a lightweight AI anomaly detector."
-    )
-
 # --- HERO ---
 
 st.markdown(
@@ -222,7 +211,7 @@ st.markdown(
         <div class="hero-title">₿ CryptoChain Analyzer Dashboard</div>
         <p class="hero-subtitle">
             Real-time Bitcoin cryptographic metrics, Proof of Work verification,
-            difficulty adjustment analysis, and anomaly detection in a professional
+            difficulty adjustment analysis, and anomaly detection in a clean
             blockchain analytics interface.
         </p>
     </div>
@@ -244,12 +233,14 @@ tabs = st.tabs(
 
 with tabs[0]:
     st.header("Project Overview")
-    st.write(
+
+    st.info(
         "This dashboard analyses live Bitcoin blockchain data and connects the results "
         "to key cryptographic concepts such as Proof of Work, difficulty adjustment, "
         "block headers, and anomaly detection."
     )
 
+    
     c1, c2 = st.columns(2)
     c1.metric("Blockchain", "Bitcoin")
     c2.metric("AI Approach", "Anomaly detection")

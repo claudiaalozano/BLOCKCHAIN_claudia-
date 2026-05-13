@@ -101,18 +101,17 @@ def render() -> None:
                 x="End Time",
                 y="Difficulty",
                 markers=True,
-                template="plotly_dark",
+                template="plotly_white",
                 height=420,
             )
             fig1.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="#111827",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
                 xaxis_title="Adjustment date",
                 yaxis_title="Difficulty",
                 margin=dict(l=20, r=20, t=20, b=20),
             )
-            fig1.update_traces(line_color="#00BFFF", marker_color="#00D68F")
-            st.plotly_chart(fig1, use_container_width=True)
 
             st.subheader("Adjustment Ratio vs Target")
             fig2 = px.bar(
@@ -125,19 +124,17 @@ def render() -> None:
                     "Actual Period Time (s)",
                     "Avg Block Time (s)",
                 ],
-                template="plotly_dark",
+                template="plotly_white",
                 height=420,
             )
             fig2.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="#111827",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
                 xaxis_title="Adjustment date",
                 yaxis_title="Ratio",
                 margin=dict(l=20, r=20, t=20, b=20),
             )
-            fig2.update_traces(marker_color="#00BFFF")
-            fig2.add_hline(y=1.0, line_dash="dash", line_color="#F0F4F8")
-            st.plotly_chart(fig2, use_container_width=True)
 
             with st.expander("Show summary table"):
                 table_df = df[

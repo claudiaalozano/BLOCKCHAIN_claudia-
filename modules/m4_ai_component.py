@@ -131,13 +131,14 @@ def render() -> None:
                 y="Inter-arrival Time (s)",
                 color="Anomaly",
                 hover_data=["Block Height", "Z-Score"],
-                template="plotly_dark",
+                template="plotly_white",
                 height=500,
                 color_discrete_map={False: "#00BFFF", True: "#00D68F"},
             )
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="#111827",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
                 xaxis_title="Timestamp",
                 yaxis_title="Inter-arrival time (s)",
                 margin=dict(l=20, r=20, t=20, b=20),
